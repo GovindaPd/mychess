@@ -1,0 +1,92 @@
+MainWindow:
+	id: main_win
+	orientation: "vertical"
+	#spacing: 10
+    #space_x: self.size[0]/3
+  
+	canvas.before:
+		Color:
+			rgba: (1,1,1,1)
+		Rectangle:
+			source: 'static/chessbg.png'
+			size: root.width, root.height
+			pos: self.pos
+
+	WindowManager:
+
+	
+<WindowManager>:
+	id: screen_manager
+	#name: screen_manager
+	DashboardWindow:
+	GameWindow:
+
+<DashboardWindow>:
+	name: "dash_screen"
+
+	GridLayout:
+		cols:1
+
+		Label:
+			text:"Computer VS Human"
+			font_size:32
+
+
+		BoxLayout:
+			orientation: "vertical"
+
+			Label:
+				text: "Select Color: "
+				font_size:24
+			
+			BoxLayout:
+				orientation: "horizontal"
+				size_hint_x: .75
+				pos_hint: {'center_x':0.5}
+				
+				Label:
+					text: "White"
+				CheckBox:
+			        group: 'selectcolor'
+			        active: True
+					on_active: root.mycolor = 'W'
+
+				Label:
+					text: "Black"
+				CheckBox:
+					group: 'selectcolor'
+					on_active: root.mycolor = 'B'
+		
+
+		BoxLayout:
+			orientation: "vertical"
+
+			Label:
+				text: "Select Level: "
+				font_size: 24
+			Slider:
+				orientation: "horizontal"
+				id: my_slider
+				min: 1
+				max: 3
+				value: root.mylevel
+				size_hint_x: .75
+				pos_hint: {'center_x':0.5}
+				on_value: root.mylevel = int(self.value)
+				#on_slider_value(self) #here on_slider_value is function define in mychess.py file
+				
+			Label:
+				text: "Medium" if int(my_slider.value)==2 else "Easy" if int(my_slider.value)<=2 else "Hard"
+
+		AnchorLayout:
+			Button:
+				text:"Start Game"
+				size_hint: .5, .3
+				on_press: root.start_game()
+				
+
+<GameWindow>:
+	name: "game_screen"
+	
+#on_press: root.parent.current = "dash_screen"
+#or we can use --> self.parent.parent.parent.parent.current = "game_screen"
