@@ -1,25 +1,25 @@
-import kivy
+#import kivy
 from kivy.config import Config
-Config.set('graphics', 'width', '360')
-Config.set('graphics', 'height', '720')
+#Config.set('graphics', 'width', '360')
+#Config.set('graphics', 'height', '720')
 Config.set('kivy', 'window_icon', 'static/knight32x32.png')
 
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen, ScreenManager
-from kivy.uix.checkbox import CheckBox
+#from kivy.uix.checkbox import CheckBox
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.anchorlayout import AnchorLayout
+#from kivy.uix.anchorlayout import AnchorLayout
 from kivy.properties import StringProperty, NumericProperty #BooleanProperty
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from functools import partial
 from copy import deepcopy
 from chess import Chess
-from config import odd_color, even_color, check_color, move_color, pm_color, gui_m, game_level, man_color
+from config import odd_color, even_color, check_color, move_color, pm_color, gui_m, game_level, man_color, background
 # from kivy.core.window import Window
 
 class MainWindow(BoxLayout):
@@ -61,9 +61,14 @@ class GameWindow(Screen):
         self.footer_layout = self.undo_btn = self.new_game_btn = None
         self.button_action_enabled = True
 
+        with self.canvas.before:
+            Color(*background)  # Set the background color (RGB format)
+            self.rect = Rectangle(size=self.main.size, pos=self.main.pos)
+        self.main.bind(size=self.update_rect, pos=self.update_rect)
+
     def update_rect(self, instance, value):
-        self.rect.pos = self.board_layout.pos
-        self.rect.size = self.board_layout.size
+        self.rect.pos = self.main.pos
+        self.rect.size = self.main.size
 
     def on_enter(self):
         self.header_layout = BoxLayout(orientation="horizontal", size_hint_y=.10)
@@ -108,10 +113,10 @@ class GameWindow(Screen):
             self.board_layout.add_widget(chessbtn)
             self.widget_ids[box_id] = chessbtn
 
-        with self.canvas.before:
-            Color(.168,.168,.168,1)  # Set the background color (RGB format)
-            self.rect = Rectangle(size=self.board_layout.size, pos=self.board_layout.pos)
-        self.board_layout.bind(size=self.update_rect, pos=self.update_rect)
+        # with self.canvas.before:
+        #     Color(.168,.168,.168,1)  # Set the background color (RGB format)
+        #     self.rect = Rectangle(size=self.board_layout.size, pos=self.board_layout.pos)
+        # self.board_layout.bind(size=self.update_rect, pos=self.update_rect)
       
   
     def on_leave(self):
