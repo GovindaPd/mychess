@@ -130,25 +130,25 @@ class ChessMixin:
             for i in self.my['avail_chessmans']:
                 if i[1]!='k':
                     my_piece_score += self.chessman_points[i[1]]
-                    my_board_score += self.EVAL[i[:2]][self.my['chessmans_positions'][i]]
+                    my_board_score += self.EVAL[i[:2]][self.my['chessmans_positions'][i]]*0.001
                 else:
-                    my_board_score += self.EVAL['EK'][self.opp['chessmans_positions'][i]]
+                    my_board_score += self.EVAL['EK'][self.opp['chessmans_positions'][i]]*0.001
   
             for i in self.opp['avail_chessmans']:
                 opp_piece_score += self.chessman_points[i[1]]
                 if i[1]!='k':
                     my_piece_score += self.chessman_points[i[1]]
-                    opp_board_score += self.EVAL[i[:2]][self.opp['chessmans_positions'][i]]
+                    opp_board_score += self.EVAL[i[:2]][self.opp['chessmans_positions'][i]]*0.001
                 else:
-                    opp_board_score += self.EVAL['EK'][self.opp['chessmans_positions'][i]]
+                    opp_board_score += self.EVAL['EK'][self.opp['chessmans_positions'][i]]*0.001
         else:
             for i in self.my['avail_chessmans']:
                 my_piece_score += self.chessman_points[i[1]]
-                my_board_score += self.EVAL[i[:2]][self.my['chessmans_positions'][i]]
+                my_board_score += self.EVAL[i[:2]][self.my['chessmans_positions'][i]]*0.001
 
             for i in self.opp['avail_chessmans']:
                 opp_piece_score += self.chessman_points[i[1]]
-                opp_board_score += self.EVAL[i[:2]][self.opp['chessmans_positions'][i]]
+                opp_board_score += self.EVAL[i[:2]][self.opp['chessmans_positions'][i]]*0.001
 
         #Material Advantage:
         final_score += my_piece_score-opp_piece_score
@@ -156,21 +156,36 @@ class ChessMixin:
         final_score += .20 if my_board_score > opp_board_score else -.20 if my_board_score!= opp_board_score else 0
         final_score += self.control_over_center()
         final_score += self.piece_activity()
-        final_score += .50 if self.well_protected_king(int(self.my['kp'][0]),int(self.my['kp'][0]),self.for_who) else -0.5
+        final_score += .50 if self.well_protected_king(int(self.my['kp'][0]),int(self.my['kp'][0]),self.for_who) else -0.50
         final_score += self.pawn_structure_score()
+        
         return final_score
 
     def check_threats_danger(self):
-        #if number of threat == 1
+        #check if threat from one chessman then find can doge that thret or have to move on safe position 
+        #if number of threat to king == 1
         if len(self.opp['additional_data']['chessmans_can_move_to_box'][self.my['kp']])==1:
             #get opp chesman pos that is providing threat
             opp_cp = self.opp['chessmans_positions'][self.opp['additional_data']['chessmans_can_move_to_box'][self.my['kp']][0]]
             #check king can kill the threating chessman or kingg can move to threating chessman position
-            if opp_cp in self.my['legal_moves'].get(self.kid[self.for_who],[]):
-                #check threating chessman does not have any backups
-                if len(self.opp['additional_data']['box_backups'].get(opp_cp,[]))==0:
-                    return self.chessman_points[self.chessboard[opp_cp][1]] if self.chessboard[opp_cp][1]!='S' else self.pawn_points[abs(self.step[self.for_opp]-int(opp_cp[0]))]
-        return -1   #points for killing and getting checkmate
+            if len(self.opp['additional_data']['box_backups'].get(opp_cp,[]))==0:
+                for cm,lm in self.my['legal_moves'].items():
+                    if opp_cp in lm:
+                        return self.chessman_points[self.chessboard[opp_cp][1]] if self.chessboard[opp_cp][1]!=\
+                                'S' else self.pawn_points[abs(self.step[self.for_opp]-int(opp_cp[0]))]
+                return 0
+            else:
+                maxs =[0] if len(self.my['legal_moves'].get(self.kid[self.for_who],[]))>0 else []
+                for cm,lm in self.my['legal_moves'].items():
+                    if opp_cp in lm:
+                        opp_p = self.chessman_points[self.chessboard[opp_cp][1]] if self.chessboard[opp_cp][1]\
+                                !='S' else self.pawn_points[abs(self.step[self.for_opp]-int(opp_cp[0]))]
+                        my_p = self.chessman_points[cm[1]] if cm[1]!='S' else self.pawn_points[abs(self.step[self.for_who]-\
+                                int(self.my['chessmans_positions'][cm][0]))]
+                        maxs.append(opp_p-my_p)
+                return max(maxs)
+        else:
+            return 0 if len(self.my['legal_moves'].get(self.kid[self.for_who],[]))>0 else -1
 
     def is_endgame(self):
         no_pawn = 0
@@ -202,13 +217,14 @@ class ChessMixin:
         for k,v in self.opp['chessmans_positions'].items():
             if v in center_pos:
                 opp_center_score += .1
-
-        return 0.20 if my_center_score>opp_center_score else -0.20 if my_center_score!=opp_center_score else 0.0
+        return my_center_score-opp_center_score
+        #return 0.20 if my_center_score>opp_center_score else -0.20 if my_center_score!=opp_center_score else 0.0
 
     def piece_activity(self):
         my_activity = sum(len(moves) for man,moves in self.my['legal_moves'].items())
         opp_activity = sum(len(moves) for man,moves in self.opp['legal_moves'].items())
-        return 0.40 if my_activity>opp_activity else -0.40 if my_activity!=opp_activity else 0.0
+        return (my_activity-opp_activity)*0.01 
+        #0.40 if my_activity>opp_activity else -0.40 if my_activity!=opp_activity else 0.0
 
     def pawn_structure_score(self):
         my_pawn_structure_score = 0.0
@@ -216,7 +232,7 @@ class ChessMixin:
         for m,p in self.my['chessmans_positions'].items():
             if m[1]=='S':
                 #Award points for pawns on advanced ranks and penalize isolated pawns.
-                my_pawn_structure_score += self.pawn_points[abs(self.step[self.for_who]-int(p[0]))]-1
+                my_pawn_structure_score += self.pawn_points[abs(self.step[self.for_who]-int(p[0]))]-1   #-1 is default pown point that was calculated in piece advantage
                 my_pawn_structure_score += -0.50 if self.is_isolated_pawn(int(p[0]), int(p[1]), m[0:2]) else 0.0
 
         for m,p in self.opp['chessmans_positions'].items():
@@ -224,8 +240,8 @@ class ChessMixin:
                 opp_pawn_structure_score += self.pawn_points[abs(self.step[self.for_opp]-int(p[0]))]-1
                 opp_pawn_structure_score += -0.50 if self.is_isolated_pawn(int(p[0]), int(p[1]), m[0:2]) else 0.0
 
-        return .50 if my_pawn_structure_score>opp_pawn_structure_score else -.50 if my_pawn_structure_score !=\
-                opp_pawn_structure_score else 0.0
+        return my_pawn_structure_score - opp_pawn_structure_score
+        # .50 if my_pawn_structure_score>opp_pawn_structure_score else -.50 if my_pawn_structure_score != opp_pawn_structure_score else 0.0
 
     def is_isolated_pawn(self,row,col,man):    #adjecent row and adjecent_column
         for ar,ac in [(row-1,col-1), (row-1,col+1), (row+1,col-1), (row+1,col+1)]:
@@ -271,10 +287,6 @@ class ChessMixin:
             #capture
             elif len(threated_boxes) == 1:
                 dp = travers_chessmans.get(man, 0)
-                # print(self.print_chessboard(self.chessboard))
-                # print("----------------------")
-                # print(self.my['additional_data']['provide_threats_to_opp'])
-                # print(self.opp['additional_data']['box_backups'])
                 if len(self.opp['additional_data']['box_backups'].get(threated_boxes[0],[])) == 0:
                     if self.chessboard[threated_boxes[0]][1] != 'K':
                         travers_chessmans.setdefault(man, dp+self.chessman_points[self.chessboard[threated_boxes[0]][1]])   #opponent chessman
